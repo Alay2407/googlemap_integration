@@ -18,7 +18,8 @@ class _GetLocationPageState extends State<GetLocationPage> {
   final Completer<GoogleMapController> _controller = Completer();
 
   Future<Position> _getUserCurrentLocation() async {
-    await Geolocator.requestPermission().then((value) {}).onError((error, stackTrace) {
+    await Geolocator.requestPermission().then((value) {
+    }).onError((error, stackTrace) {
       print(error.toString());
     });
 
@@ -29,7 +30,7 @@ class _GetLocationPageState extends State<GetLocationPage> {
 
   static const CameraPosition _kGooglePlex = CameraPosition(
     target: LatLng(21.1702, 72.8311),
-    zoom: 14,
+    zoom: 8 ,
   );
 
   List<Marker> list = const [
@@ -46,8 +47,13 @@ class _GetLocationPageState extends State<GetLocationPage> {
   void initState() {
 
     super.initState();
+
     _markers.addAll(list);
     // loadData();
+    locationFuc();
+    Timer.periodic(Duration(seconds: 10), (Timer timer) {
+      locationFuc();
+    });
   }
 
   // loadData() {
@@ -64,6 +70,27 @@ class _GetLocationPageState extends State<GetLocationPage> {
   //   });
   // }
 
+  locationFuc(){
+    _getUserCurrentLocation().then((value) async {
+      print('latitide is==> ${value.latitude} && longtitude is ${value.longitude}');
+      _markers.add(Marker(markerId: const MarkerId('3'), position: LatLng(value.latitude, value.longitude), infoWindow: InfoWindow(title: address)));
+      final GoogleMapController controller = await _controller.future;
+
+      CameraPosition _kGooglePlex = CameraPosition(
+        target: LatLng(value.latitude, value.longitude),
+        zoom: 8,
+      );
+
+      controller.animateCamera(CameraUpdate.newCameraPosition(_kGooglePlex));
+
+      List<Placemark> placemarks = await placemarkFromCoordinates(value.latitude, value.longitude);
+
+      final add = placemarks.first;
+      address = add.locality.toString() + " " + add.administrativeArea.toString() + " " + add.subAdministrativeArea.toString() + " " + add.country.toString();
+
+      setState(() {});
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,39 +103,48 @@ class _GetLocationPageState extends State<GetLocationPage> {
         child: Stack(
           children: [
             GoogleMap(
+              zoomControlsEnabled: true,
+              compassEnabled: true,
               myLocationEnabled: true,
               initialCameraPosition: _kGooglePlex,
-              mapType: MapType.normal,
+              mapType: MapType.satellite,
               markers: Set<Marker>.of(_markers),
               onMapCreated: (GoogleMapController controller) {
                 _controller.complete(controller);
-              },
+              }
+
             ),
             Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(
-                  onPressed: () {
-                    _getUserCurrentLocation().then((value) async {
-                      _markers.add(Marker(markerId: const MarkerId('3'), position: LatLng(value.latitude, value.longitude), infoWindow: InfoWindow(title: address)));
-                      final GoogleMapController controller = await _controller.future;
+                Container(
+                  color: Colors.blue,
+                  child: TextButton(
+                    onPressed: () {
+                      _getUserCurrentLocation().then((value) async {
+                        print('latitide is==> ${value.latitude} && longtitude is ${value.longitude}');
+                        _markers.add(Marker(markerId: const MarkerId('3'), position: LatLng(value.latitude, value.longitude), infoWindow: InfoWindow(title: address)));
+                        final GoogleMapController controller = await _controller.future;
 
-                      CameraPosition _kGooglePlex = CameraPosition(
-                        target: LatLng(value.latitude, value.longitude),
-                        zoom: 8,
-                      );
-                      controller.animateCamera(CameraUpdate.newCameraPosition(_kGooglePlex));
+                        CameraPosition _kGooglePlex = CameraPosition(
+                          target: LatLng(value.latitude, value.longitude),
+                          zoom: 19,
+                        );
 
-                      List<Placemark> placemarks = await placemarkFromCoordinates(value.latitude, value.longitude);
+                        controller.animateCamera(CameraUpdate.newCameraPosition(_kGooglePlex));
 
-                      final add = placemarks.first;
-                      address = add.locality.toString() + " " + add.administrativeArea.toString() + " " + add.subAdministrativeArea.toString() + " " + add.country.toString();
+                        List<Placemark> placemarks = await placemarkFromCoordinates(value.latitude, value.longitude);
 
-                      setState(() {});
-                    });
-                  },
-                  child: const Text(
-                    'Get current loction',
+                        final add = placemarks.first;
+                        address = add.locality.toString() + " " + add.administrativeArea.toString() + " " + add.subAdministrativeArea.toString() + " " + add.country.toString();
+
+                        setState(() {});
+                      });
+                    },
+                    child: const Text(
+                      'Get current loction',
+                      style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white,fontSize: 16),
+                    ),
                   ),
                 ),
               ],

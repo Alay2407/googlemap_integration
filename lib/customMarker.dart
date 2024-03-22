@@ -23,7 +23,7 @@ class _CustomMarkerState extends State<CustomMarker> {
 
   final List<Marker> _markers = <Marker>[];
   final List<LatLng> _latLang = <LatLng>[
-    const LatLng(33.6941, 72.9734)  ,
+    const LatLng(37.335480, -121.893028),
     const LatLng(33.7008, 72.9682),
     const LatLng(33.6992, 72.9744),
     const LatLng(33.6939, 72.9771),

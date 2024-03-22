@@ -26,8 +26,8 @@ class _ConvetionPageState extends State<ConvetionPage> {
                 );
 
                 List<Placemark> placemarks = await placemarkFromCoordinates(
-                  52.2165157,
-                  6.9437819,
+                  22.993632915357956,
+                  72.60361707266559,
                 );
                 setState(() {
                   cordinates = locationsCor.first.longitude.toString();
@@ -38,8 +38,8 @@ class _ConvetionPageState extends State<ConvetionPage> {
                 'Convert',
               ),
             ),
-            Text(cordinates),
-            Text(address)
+            Text('Cordinates is ===> ${cordinates}'),
+            Text('Address is ===> ${address}')
           ],
         ),
       ),
