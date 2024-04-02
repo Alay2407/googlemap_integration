@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
+import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:googlemap_integration/searchPlaces.dart';
+import 'package:location/location.dart';
+
 class GetLocationPage extends StatefulWidget {
   double? lat;
   double? long;
@@ -15,11 +18,10 @@ class GetLocationPage extends StatefulWidget {
 }
 
 class _GetLocationPageState extends State<GetLocationPage> {
-
-
+  LocationData? currentLocation;
 
   String address = '';
-
+  late Location location;
   final Completer<GoogleMapController> _controller = Completer();
   Future<Position> _getUserCurrentLocation() async {
     await Geolocator.requestPermission().then((value) {
@@ -50,12 +52,20 @@ class _GetLocationPageState extends State<GetLocationPage> {
   Geolocator geolocator =Geolocator();
   @override
   void initState() {
-
+    location = Location();
+    location.onLocationChanged.listen((LocationData cLoc) {
+      // cLoc contains the lat and long of the
+      // current user's position in real time,
+      // so we're holding on to it
+      currentLocation = cLoc;
+      print("Current location is === >${currentLocation}");
+    });
     super.initState();
     _markers.addAll(list);
 
     // loadData();
     locationFuc();
+    ///This for after couple of minutes it will again call this function for current location
     // Timer.periodic(const Duration(seconds: 10), (Timer timer) {
     //   locationFuc();
     // });
@@ -88,8 +98,7 @@ class _GetLocationPageState extends State<GetLocationPage> {
 
       controller.animateCamera(CameraUpdate.newCameraPosition(_kGooglePlex));
 
-      List<Placemark> placemarks = await placemarkFromCoordinates(widget.lat!, widget.long!);
-
+      List<geocoding.Placemark> placemarks = await geocoding.placemarkFromCoordinates(widget.lat!, widget.long!);
       final add = placemarks.first;
       address = add.locality.toString() + " " + add.administrativeArea.toString() + " " + add.subAdministrativeArea.toString() + " " + add.country.toString();
 
@@ -219,7 +228,7 @@ class _GetLocationPageState extends State<GetLocationPage> {
 
                         controller.animateCamera(CameraUpdate.newCameraPosition(_kGooglePlex));
 
-                        List<Placemark> placemarks = await placemarkFromCoordinates(value.latitude, value.longitude);
+                        List<geocoding.Placemark> placemarks = await geocoding.placemarkFromCoordinates(value.latitude, value.longitude);
 
                         final add = placemarks.first;
                         address = add.locality.toString() + " " + add.administrativeArea.toString() + " " + add.subAdministrativeArea.toString() + " " + add.country.toString();
@@ -235,6 +244,24 @@ class _GetLocationPageState extends State<GetLocationPage> {
                 ),
               ],
             ),
+            Center(
+              child: StreamBuilder<LocationData>(
+                  stream: location.onLocationChanged,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    }
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    LocationData? data = snapshot.data;
+                    return Text(
+                      "Lat is ==> ${data!.latitude} &&\n Long is ==> ${data.longitude} ",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    );
+                  }),
+            ),
           ],
         ),
       ),
@@ -242,7 +269,7 @@ class _GetLocationPageState extends State<GetLocationPage> {
   }
 
   Future _addMarkerLongPressed(LatLng latlang) async {
-    List<Placemark> placemarks = await placemarkFromCoordinates(latlang.latitude, latlang.longitude);
+    List<geocoding.Placemark> placemarks = await geocoding.placemarkFromCoordinates(latlang.latitude, latlang.longitude);
 
     final add = placemarks.first;
     address = "${add.street}" "${add.administrativeArea} " " ${add.subLocality} " " ${add.thoroughfare} ${add.locality} " " ${add.subThoroughfare} " " ${add.subAdministrativeArea} ${add.country}";
