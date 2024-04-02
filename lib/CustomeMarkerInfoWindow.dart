@@ -39,7 +39,6 @@ class _CustomMarkerInfoWindowScreenState extends State<CustomMarkerInfoWindowScr
 
   @override
   void initState() {
-
     super.initState();
     loadData();
   }
@@ -79,7 +78,13 @@ class _CustomMarkerInfoWindowScreenState extends State<CustomMarkerInfoWindowScr
                           width: 300,
                           height: 100,
                           decoration: const BoxDecoration(
-                            image: DecorationImage(image: NetworkImage('https://media.tacdn.com/media/attractions-splice-spp-674x446/0b/2d/01/6e.jpg'), fit: BoxFit.fitWidth, filterQuality: FilterQuality.high),
+                            image: DecorationImage(
+                              image: NetworkImage(
+                                'https://media.tacdn.com/media/attractions-splice-spp-674x446/0b/2d/01/6e.jpg',
+                              ),
+                              fit: BoxFit.fitWidth,
+                              filterQuality: FilterQuality.high,
+                            ),
                             borderRadius: BorderRadius.all(
                               Radius.circular(10.0),
                             ),
@@ -135,13 +140,19 @@ class _CustomMarkerInfoWindowScreenState extends State<CustomMarkerInfoWindowScr
           children: [
             GoogleMap(
               markers: _markers,
+              ///For Initial camera position
               initialCameraPosition: CameraPosition(
                 target: _latLng,
                 zoom: _zoom,
               ),
+
+              ///When map is loaded at that time view
               onMapCreated: (GoogleMapController controller) async {
                 _customInfoWindowController.googleMapController = controller;
               },
+
+
+              ///During moving camera view
               onCameraMove: (position) {
                 _customInfoWindowController.onCameraMove!();
               },

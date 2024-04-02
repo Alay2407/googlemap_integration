@@ -1,6 +1,9 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:googlemap_integration/getLocationPage.dart';
 import 'package:uuid/uuid.dart';
 import 'package:http/http.dart' as http;
 
@@ -36,7 +39,7 @@ class _SearchPlacesState extends State<SearchPlaces> {
   }
 
   getSuggestion(String input) async {
-    String kPLACES_API_KEY = "AIzaSyCLXYGKBylq5OjWSDI3YA884MJ7ih5_eW0";
+    String kPLACES_API_KEY = "AIzaSyDQ2c_pOSOFYSjxGMwkFvCVWKjYOM9siow";
     String type = '(regions)';
 
     try {
@@ -48,7 +51,7 @@ class _SearchPlacesState extends State<SearchPlaces> {
       print(data.toString());
       if (response.statusCode == 200) {
         setState(() {
-          _placeList = json.decode(response.body)['predictions'];
+          _placeList = jsonDecode(response.body.toString())['predictions'];
         });
       } else {
         throw Exception('Failed to load predictions');
@@ -79,20 +82,42 @@ class _SearchPlacesState extends State<SearchPlaces> {
               suffixIcon: IconButton(
                 onPressed: () {
                   _controller.clear();
-                  print(uuid.v4());
+                  print("uuid is ===> ${uuid.v4()}");
                 },
                 icon: const Icon(Icons.clear),
               ),
             ),
           ),
-          ListView.builder(
-            itemCount: _placeList.length,
-            shrinkWrap: true,
-            itemBuilder: (context, index) {
-              return GestureDetector(onTap: () {
+          Expanded(
+            child: ListView.builder(
+              itemCount: _placeList.length,
+              shrinkWrap: true,
+              itemBuilder: (context, index) {
+                return GestureDetector(
+                  onTap: () async {
+                    List<Location> locationsCor = await locationFromAddress(
+                      _placeList[index]['description'],
+                    );
+                    print(locationsCor.last.latitude);
+                    print(locationsCor.last.longitude);
 
-              },child: ListTile(title: Text(_placeList[index]['prediction'])),);
-            },
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => GetLocationPage(
+                            lat: locationsCor.last.latitude,
+                            long: locationsCor.last.longitude,
+                          ),
+                        ));
+                  },
+                  child: ListTile(
+                    title: Text(
+                      _placeList[index]['description'],
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
