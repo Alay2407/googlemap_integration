@@ -17,3 +17,37 @@
             currentLocation = cLoc;
             print("Current location is === >${currentLocation}");
           });
+
+
+
+
+
+
+
+
+class PermissionDeniedWidget extends StatelessWidget {
+final VoidCallback openAppSettings;
+
+const PermissionDeniedWidget({required this.openAppSettings});
+
+@override
+Widget build(BuildContext context) {
+return Scaffold(
+appBar: AppBar(
+title: Text('Permission Required'),
+),
+body: Center(
+child: Column(
+mainAxisAlignment: MainAxisAlignment.center,
+children: [
+Text('Location permission denied.'),
+ElevatedButton(
+onPressed: openAppSettings,
+child: Text('Open Settings'),
+),
+],
+),
+),
+);
+}
+}

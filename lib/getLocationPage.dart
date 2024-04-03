@@ -2,11 +2,16 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:googlemap_integration/permission_manager.dart';
 import 'package:googlemap_integration/searchPlaces.dart';
 import 'package:location/location.dart';
+import 'package:permission_handler/permission_handler.dart' as permission;
+
+import 'enum.dart';
 
 class GetLocationPage extends StatefulWidget {
   double? lat;
@@ -17,9 +22,10 @@ class GetLocationPage extends StatefulWidget {
   State<GetLocationPage> createState() => _GetLocationPageState();
 }
 
-class _GetLocationPageState extends State<GetLocationPage> {
+class _GetLocationPageState extends State<GetLocationPage> with WidgetsBindingObserver {
   LocationData? currentLocation;
-
+  permission.PermissionStatus? _permissionStatus;
+  LatLng _initialPosition = LatLng(0, 0);
   String address = '';
   late Location location;
   final Completer<GoogleMapController> _controller = Completer();
@@ -49,27 +55,152 @@ class _GetLocationPageState extends State<GetLocationPage> {
     ),
   ];
 
-  Geolocator geolocator =Geolocator();
+  Geolocator geolocator = Geolocator();
+
+  // ///This is for permission handler for check permission:
+  // Future<void> _checkLocationPermission() async {
+  //   permission.PermissionStatus status = await permission.Permission.location.status;
+  //   print("Permission status is ==> $status");
+  //   setState(() {
+  //     _permissionStatus = status;
+  //   });
+  //   if (!_permissionStatus.isGranted) {
+  //
+  //     await _requestLocationPermission();
+  //   } else {
+  //     _getCurrentLocation();
+  //   }
+  // }
+  // Future<Position> _requestLocationPermission() async {
+  //   print("Inside location permission");
+  //   permission.PermissionStatus status = await permission.Permission.location.request();
+  //   print("Inside location && status is===>  $status");
+  //
+  //   setState(() {
+  //     _permissionStatus = status;
+  //   });
+  //   if (_permissionStatus.isGranted) {
+  //     _getCurrentLocation();
+  //   }
+  //   return Geolocator.getCurrentPosition();
+  // }
+  // void _getCurrentLocation() {
+  //   print("Inside get current location");
+  //
+  //   // Retrieve current location and update _initialPosition
+  //   // You can use Geolocator or any other method to get the current location
+  //   // For this example, we'll set an initial position to (0, 0)
+  //   setState(() {
+  //     _initialPosition = LatLng(0, 0);
+  //   });
+  // }
+
+  Future<void> _checkLocationPermission() async {
+    permission.PermissionStatus status = await permission.Permission.location.status;
+    setState(() {
+      _permissionStatus = status;
+    });
+    if (_permissionStatus == PermissionStatus.denied || _permissionStatus == PermissionStatus.deniedForever) {
+      _requestLocationPermission();
+    }
+  }
+
+  Future<void> _requestLocationPermission() async {
+    permission.PermissionStatus status = await permission.Permission.location.request();
+    setState(() {
+      _permissionStatus = status;
+    });
+  }
+
+  void _openAppSettings() {
+    permission.openAppSettings();
+  }
+
   @override
   void initState() {
+    WidgetsBinding.instance.addObserver(this);
+
+    ///This is a permission handler for checking permission first:
+    RequestPermissionManager(PermissionType.whenInUseLocation).onPermissionDenied(() {
+      // Handle permission denied for location
+      print('Location permission denied');
+      setState(() {
+        _permissionStatus = permission.PermissionStatus.denied;
+      });
+      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>PermissionDeniedWidget(openAppSettings: _openAppSettings),));
+    }).onPermissionGranted(() {
+      // Handle permission granted for location.
+      setState(() {
+        _permissionStatus = permission.PermissionStatus.granted;
+      });
+      print('Location permission granted');
+    }).onPermissionPermanentlyDenied(() {
+      // Handle permission permanently denied for location
+      print('Location permission permanently denied');
+      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>PermissionDeniedWidget(openAppSettings: _openAppSettings),));
+      setState(() {
+        _permissionStatus = permission.PermissionStatus.permanentlyDenied;
+      });
+    }).execute();
+
+    // _checkLocationPermission();
     location = Location();
-    location.onLocationChanged.listen((LocationData cLoc) {
-      // cLoc contains the lat and long of the
-      // current user's position in real time,
-      // so we're holding on to it
-      currentLocation = cLoc;
-      print("Current location is === >${currentLocation}");
-    });
+
+    ///This for listen on Location change
+    // location.onLocationChanged.listen((LocationData cLoc) {
+    //   // cLoc contains the lat and long of the
+    //   // current user's position in real time,
+    //   // so we're holding on to it
+    //   currentLocation = cLoc;
+    //   print("Current location is === >${currentLocation}");
+    // });
     super.initState();
     _markers.addAll(list);
 
     // loadData();
-    locationFuc();
+    // locationFuc();
     ///This for after couple of minutes it will again call this function for current location
     // Timer.periodic(const Duration(seconds: 10), (Timer timer) {
     //   locationFuc();
     // });
   }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkPermissionStatus();
+      print("Widget binding state is ==> Resumed");
+    } else {
+      print("Widget binding state is ==> ${state.toString()}");
+    }
+  }
+
+  Future<void> _checkPermissionStatus() async {
+    final status = await permission.Permission.location.status;
+
+    if (status != _permissionStatus) {
+      setState(() {
+        _permissionStatus = status;
+      });
+      if (status.isDenied) {
+        print('Location permission is denied.===>');
+      } else if (status.isGranted) {
+        print('Location permission is granted.===>');
+      } else if (status.isPermanentlyDenied) {
+        print('Location permission is permanently denied. Redirect to settings.===> ');
+      } else {
+        // Handle other cases
+        print('Location permission status: $status');
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
   //
   // loadData() {
   //   _getUserCurrentLocation().then((value) async {
@@ -85,28 +216,28 @@ class _GetLocationPageState extends State<GetLocationPage> {
   //   });
   // }
   //
-  locationFuc(){
-    _getUserCurrentLocation().then((value) async {
-      print('latitide is==> ${value.latitude} && longtitude is ${value.longitude}');
-      _markers.add(Marker(markerId: const MarkerId('3'), position: LatLng(widget.lat!, widget.long!), infoWindow: InfoWindow(title: address)));
-      final GoogleMapController controller = await _controller.future;
-
-      CameraPosition _kGooglePlex = CameraPosition(
-        target: LatLng(widget.lat!, widget.long!),
-        zoom: 15,
-      );
-
-      controller.animateCamera(CameraUpdate.newCameraPosition(_kGooglePlex));
-
-      List<geocoding.Placemark> placemarks = await geocoding.placemarkFromCoordinates(widget.lat!, widget.long!);
-      final add = placemarks.first;
-      address = add.locality.toString() + " " + add.administrativeArea.toString() + " " + add.subAdministrativeArea.toString() + " " + add.country.toString();
-
-      setState(() {
-        print(address);
-      });
-    });
-  }
+  // locationFuc(){
+  //   _getUserCurrentLocation().then((value) async {
+  //     print('latitide is==> ${value.latitude} && longtitude is ${value.longitude}');
+  //     _markers.add(Marker(markerId: const MarkerId('3'), position: LatLng(widget.lat!, widget.long!), infoWindow: InfoWindow(title: address)));
+  //     final GoogleMapController controller = await _controller.future;
+  //
+  //     CameraPosition _kGooglePlex = CameraPosition(
+  //       target: LatLng(widget.lat!, widget.long!),
+  //       zoom: 15,
+  //     );
+  //
+  //     controller.animateCamera(CameraUpdate.newCameraPosition(_kGooglePlex));
+  //
+  //     List<geocoding.Placemark> placemarks = await geocoding.placemarkFromCoordinates(widget.lat!, widget.long!);
+  //     final add = placemarks.first;
+  //     address = add.locality.toString() + " " + add.administrativeArea.toString() + " " + add.subAdministrativeArea.toString() + " " + add.country.toString();
+  //
+  //     setState(() {
+  //       print(address);
+  //     });
+  //   });
+  // }
 
   MapType _currentMapType = MapType.normal;
 
@@ -178,21 +309,23 @@ class _GetLocationPageState extends State<GetLocationPage> {
         backgroundColor: Colors.deepOrange,
         title: const Text('Flutter Google Map'),
       ),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            GoogleMap(
-              myLocationButtonEnabled: true,
-              zoomControlsEnabled: true,
-              compassEnabled: true,
+      body: _permissionStatus == permission.PermissionStatus.granted
+          ? SafeArea(
+              child: Stack(
+                children: [
+                  GoogleMap(
+                    myLocationButtonEnabled: true,
+                    zoomControlsEnabled: true,
+                    compassEnabled: true,
               myLocationEnabled: true,
-              initialCameraPosition: _kGooglePlex,
-              // mapType: MapType.hybrid,
-              mapType: _currentMapType,
-              onMapCreated: (GoogleMapController controller) {
-                _controller.complete(controller);
-              },
-              tiltGesturesEnabled: false,
+                    // initialCameraPosition: _kGooglePlex,
+                    initialCameraPosition: CameraPosition(target: _initialPosition),
+                    // mapType: MapType.hybrid,
+                    mapType: _currentMapType,
+                    onMapCreated: (GoogleMapController controller) {
+                      _controller.complete(controller);
+                    },
+                    tiltGesturesEnabled: false,
               onLongPress: (latlang) {
                 _addMarkerLongPressed(latlang); //we will call this function when pressed on t
                 // he map
@@ -264,7 +397,19 @@ class _GetLocationPageState extends State<GetLocationPage> {
             ),
           ],
         ),
-      ),
+            )
+          : const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Location permission denied.'),
+                  ElevatedButton(
+                    onPressed: permission.openAppSettings,
+                    child: Text('Open Settings'),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 

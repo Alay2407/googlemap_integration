@@ -7,6 +7,8 @@ import 'package:googlemap_integration/getLocationPage.dart';
 import 'package:uuid/uuid.dart';
 import 'package:http/http.dart' as http;
 
+import 'getLocationPageOld.dart';
+
 class SearchPlaces extends StatefulWidget {
   const SearchPlaces({super.key});
 
@@ -108,7 +110,8 @@ class _SearchPlacesState extends State<SearchPlaces> {
                             lat: locationsCor.last.latitude,
                             long: locationsCor.last.longitude,
                           ),
-                        ));
+                      ),
+                    );
                   },
                   child: ListTile(
                     title: Text(
