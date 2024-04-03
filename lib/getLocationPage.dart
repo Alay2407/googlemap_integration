@@ -165,6 +165,8 @@ class _GetLocationPageState extends State<GetLocationPage> with WidgetsBindingOb
     // });
   }
 
+  ///This funtion for Listening application current state
+  ///Is application resume or not
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -175,6 +177,9 @@ class _GetLocationPageState extends State<GetLocationPage> with WidgetsBindingOb
     }
   }
 
+
+  ///This For checking application current status of permission
+  ///Is it allowed or denied///
   Future<void> _checkPermissionStatus() async {
     final status = await permission.Permission.location.status;
 
@@ -241,6 +246,8 @@ class _GetLocationPageState extends State<GetLocationPage> with WidgetsBindingOb
 
   MapType _currentMapType = MapType.normal;
 
+
+  ///This is for Change the view of map ex..: Normal,Hybrid,Satelite etc...
   Future<void> _toggleMapType() async {
     MapType? newMapType = await showModalBottomSheet<MapType>(
       context: context,
@@ -283,6 +290,8 @@ class _GetLocationPageState extends State<GetLocationPage> with WidgetsBindingOb
 
   @override
   Widget build(BuildContext context) {
+    ///Here checking the permission status is it granted or not
+    ///If not then ask permission from setting page
     return _permissionStatus == permission.PermissionStatus.granted
         ? Scaffold(
             floatingActionButton: FloatingActionButton(
