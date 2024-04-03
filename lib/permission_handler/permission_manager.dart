@@ -1,6 +1,6 @@
 import 'package:permission_handler/permission_handler.dart';
 
-import 'enum.dart';
+import '../utils/enum.dart';
 
 class RequestPermissionManager {
   /// Permission type to request permission from user

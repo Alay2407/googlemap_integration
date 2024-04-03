@@ -17,7 +17,6 @@ class MyApp extends StatelessWidget {
       title: 'Map view',
       theme: ThemeData(primarySwatch: Colors.green),
       home: GetLocationPage(),
-
     );
   }
 }

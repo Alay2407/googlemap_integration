@@ -6,12 +6,12 @@ import 'package:flutter/widgets.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:googlemap_integration/permission_manager.dart';
+import 'package:googlemap_integration/permission_handler/permission_manager.dart';
 import 'package:googlemap_integration/searchPlaces.dart';
 import 'package:location/location.dart';
 import 'package:permission_handler/permission_handler.dart' as permission;
 
-import 'enum.dart';
+import 'utils/enum.dart';
 
 class GetLocationPage extends StatefulWidget {
   double? lat;
@@ -283,9 +283,10 @@ class _GetLocationPageState extends State<GetLocationPage> with WidgetsBindingOb
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: _toggleMapType,
+    return _permissionStatus == permission.PermissionStatus.granted
+        ? Scaffold(
+            floatingActionButton: FloatingActionButton(
+              onPressed: _toggleMapType,
         child: Icon(Icons.map),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.startTop,
@@ -309,8 +310,7 @@ class _GetLocationPageState extends State<GetLocationPage> with WidgetsBindingOb
         backgroundColor: Colors.deepOrange,
         title: const Text('Flutter Google Map'),
       ),
-      body: _permissionStatus == permission.PermissionStatus.granted
-          ? SafeArea(
+            body: SafeArea(
               child: Stack(
                 children: [
                   GoogleMap(
@@ -397,20 +397,8 @@ class _GetLocationPageState extends State<GetLocationPage> with WidgetsBindingOb
             ),
           ],
         ),
-            )
-          : const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Location permission denied.'),
-                  ElevatedButton(
-                    onPressed: permission.openAppSettings,
-                    child: Text('Open Settings'),
-                  ),
-                ],
-              ),
-            ),
-    );
+            ))
+        : PermissionPage(openAppSettings: _openAppSettings);
   }
 
   Future _addMarkerLongPressed(LatLng latlang) async {
@@ -438,5 +426,32 @@ class _GetLocationPageState extends State<GetLocationPage> with WidgetsBindingOb
     //This is optional, it will zoom when the marker has been created
     GoogleMapController controller = await _controller.future;
     controller.animateCamera(CameraUpdate.newLatLngZoom(latlang, 16.0));
+  }
+}
+
+
+
+///This Class for Asking permission///
+class PermissionPage extends StatelessWidget {
+  final VoidCallback openAppSettings;
+
+  const PermissionPage({required this.openAppSettings});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('Location is Mandetory for use application:'),
+            ElevatedButton(
+              onPressed: openAppSettings,
+              child: Text('Enable Permission:'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
